@@ -1,34 +1,24 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import './App.css'
+import { useForm } from 'react-hook-form';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    mode: 'onTouched' // Validation will trigger on the first blur event. After that, it will trigger on every change event.
+  });
 
   return (
-    <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+    <div style={{display: "flex", flexDirection: "column", maxWidth: "20vw"}}>
+        {/* onBlur={handleSubmit((data) => console.log(data))}  */}
+        <input {...register('firstName')} placeholder={"Förnamn"}/>
+        <input {...register('lastName', { required: true })} placeholder={"Efternamn"} />
+        {errors.lastName && <span>Last name is required.</span>}
+        <input {...register('age', { required:true, pattern: /\d+/ })} placeholder={"Ålder"} />
+        {errors.age && <span>Please enter number for age.</span>}
     </div>
-  )
+  );
 }
 
 export default App
