@@ -5,41 +5,14 @@ import {
     useForm, 
     FormProvider as FormValidationProvider, 
 } from 'react-hook-form';
-
+import {IFormState, IStepState, multiStepForm, stepAction} from './interfaces';
 import {z} from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-
-// Enum för form, används för att kunna använda samma namn på inputfältet och i formSchema och interface
-const enum multiStepForm {
-    firstName = "firstName",
-    lastName = "lastName",
-}
-const enum stepAction {
-    IncStep = "IncStep",
-    DecStep = "DecStep",
-}
 
 const formSchema = z.object({
     [multiStepForm.firstName]: z.string().min(1),
     [multiStepForm.lastName]: z.string().min(2).max(20),
 })
-
-interface IFormState {
-    [multiStepForm.firstName]: string,
-    [multiStepForm.lastName]: string,
-}
-
-interface IStepState {
-    step: number,
-    allowNext: boolean,
-    allowPrev: boolean,
-}
-
-interface IInputfield extends InputHTMLAttributes<HTMLInputElement>  {
-    name: string,
-    validationOptions?: any,
-    rest?: InputHTMLAttributes<HTMLInputElement>
-}
 
 
 const FormReducer = (state:IFormState, {type, value}: {type:multiStepForm, value:string}) => ({...state, [type]: value})
@@ -54,7 +27,6 @@ const Stepreducer = (state:IStepState, type: stepAction) => {
             return state
     }
 }
-
 
 const InitialFormState: IFormState = {
     [multiStepForm.firstName]: "",

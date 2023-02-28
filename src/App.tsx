@@ -5,9 +5,7 @@ import {
     useFormContext as useFormValidationProvider 
 } from 'react-hook-form';
 
-
 import { useMultiFormContext, MultiFormProvider } from './MultiFormContext';
-import { useReducer } from 'react';
 
 interface IInputfield extends InputHTMLAttributes<HTMLInputElement>  {
     name: string,
@@ -44,9 +42,9 @@ const CurrentForm = () => {
     const { formState, formDispatch, stepState, stepDispatch } = useMultiFormContext();
     switch (stepState.step) {
         case 1:
-            return <InputField name={multiStepForm.firstName} placeholder="Förnamn" onChange={(e) => handler(e)} value={formState?.firstName} />;
+            return <InputField name={multiStepForm.firstName} placeholder="Förnamn" handler={(e) => handler(e)} value={formState?.firstName} />;
         case 2:
-            return <InputField name={multiStepForm.lastName} placeholder="Efternamn" onChange={(e) => handler(e)} value={formState?.lastName} />;
+            return <InputField name={multiStepForm.lastName} placeholder="Efternamn" handler={(e) => handler(e)} value={formState?.lastName} />;
         default:
             return <></>;
     }
@@ -56,8 +54,6 @@ function App() {
 
     const handler = (e: any) => formDispatch({type: e.target.name, value: e.target.value})
     // const handler = (e: any) => console.log(e)
-
-
 
     return (
         <>
@@ -72,4 +68,4 @@ function App() {
     );
 }
 
-export default <MultiFormProvider><App/></MultiFormProvider>
+export default () => <MultiFormProvider><App/></MultiFormProvider>
