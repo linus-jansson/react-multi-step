@@ -1,10 +1,10 @@
-import { createContext, useReducer } from "react";
+import { createContext, type ReactNode, useReducer } from "react";
 
 
 const formContext = createContext({});
 
 
-const FormProvider = ({ children }) => {
+const FormProvider = ({ children }: {children: ReactNode}) => {
     const [formState, formDispatch] = useReducer((state, action) => {
         switch (action.type) {
             case "SET_FORM":

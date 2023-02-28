@@ -5,24 +5,24 @@ import {
     useState 
 } from 'react';
 
-export const useMultiStepForm = (steps: ReactElement[]) => {
-    const [step, setStep] = useState(1); // Initialize step to step 1
-    const MAX_STEP = steps.length; // Max step, change to generic depending on how many views
+export const useMultiStepForm = (steps: any[]) => {
+    const [currentStepIdx, setCurrentStepIdx] = useState(0); // Initialize step to step 1
+    const MAX_STEP = steps.length - 1; // Max step, change to generic depending on how many views
 
     /* Functions wrappers that interact with state */
-    const nextStep = () => (step <= MAX_STEP) ? setStep(prev => prev + 1) : step; // Increment step
-    const prevStep = () => (step > 1) ? setStep(prev => prev - 1) : step; // Decrement step
-    const goToStep = (step: number) => setStep(step); // Go to specific step, If needed
-    const isFirstStep = () => step === 1; // Check if step is first step
-    const isLastStep = () => step === MAX_STEP; // Check if step is last step
+    const nextStep = () => (currentStepIdx < MAX_STEP) ? setCurrentStepIdx(prev => prev + 1) : currentStepIdx; // Increment step
+    const prevStep = () => (currentStepIdx > 0) ? setCurrentStepIdx(prev => prev - 1) : currentStepIdx;         // Decrement step
+    const goToStep = (step: number) => setCurrentStepIdx(step); // Go to specific step, If needed
     
-    const currentView  = steps[step - 1]
+    const currentView  = steps[currentStepIdx]
+
     return {
         currentView,
-        step,
+        currentStepIdx,
         nextStep,
         prevStep,
-        isFirstStep,
-        isLastStep,        
+        isFirstStep: currentStepIdx === 0,
+        isLastStep: currentStepIdx === MAX_STEP,
+        steps    
     }
 }
