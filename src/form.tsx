@@ -1,4 +1,4 @@
-import { FormEvent, Fragment, InputHTMLAttributes } from "react"
+import { useReducer, type FormEvent, Fragment, type InputHTMLAttributes, ReactNode } from "react"
 import { FormProvider, useFormContext, useForm } from "react-hook-form"
 
 import {useMultiStepForm, } from "./hooks"
@@ -16,7 +16,7 @@ export const enum multiStepForm {
     firstName = "firstName",
     lastName = "lastName",
     dateBooked = "dateBooked",
-    email = "dateBooked",
+    email = "email",
 }
 
 
@@ -27,33 +27,37 @@ export interface IFormState {
     [multiStepForm.email]: string,
 }
 
-interface FormState {
-    formAnswers: {
-        viewId: number,
-        inputAnswers: {
-            key: string, // field name in formSchema, input, data to be sent to backend see example below
-            inputType: string, // type (text, date, etc)
-            value: string, // input value to be parsed with inputType
-        }[]
-    }[]
+interface Field {
+    name: string, // field name in formSchema, input, data to be sent to backend see example below
+    type: string, // type (text, date, etc)
+    required: boolean, // required or not
+    placeholder: string,
+    value: string, // input value to be parsed with inputType
 }
 
+interface ViewData {
+    viewId: number,
+    title: string,
+    fields: Field[]
+}
+
+export interface FormState extends Array<ViewData> {}
 
 /*
 state example:
 
-    formAnswers: [
+    form: [
         {
             viewId: 1, 
             view: "date",
-            inputAnswers: [
+            fields: [
                 {inputType: "date", value: "2023-10-10" key: "dateBooked"}
             ]
         },
         {
             viewId: 2,
             view: "PersonalInfo",
-            inputAnswers: [
+            fields: [
                 {inputType: "text", value: "81293712837", key: "persNr"},
                 {inputType: "boolean", value: "true", key: "missingPersonNr"},
             ]
@@ -63,47 +67,6 @@ state example:
 - When a state change happens in a field push to the inputAnswers array in the current view object
 - When the form is submitted, parse the FormAnswers to the IBooking interface and sent to backend
 */
-
-const formSchema = z.object({
-    [multiStepForm.firstName]: z.string().min(1),
-    [multiStepForm.lastName]: z.string().min(2).max(20),
-    [multiStepForm.email]: z.string().email(),
-    [multiStepForm.dateBooked]: z.string().datetime(),
-})
-
-function Input({name, ...rest}: IInputfield) {
-    const { register, formState: { errors } } = useFormContext();
-    const error = errors?.[name];
-
-    return (
-        <Fragment>
-            <input 
-                type="text"
-                id={name}
-                style={{border: error ? "2px solid red" : "1px solid black"}} // Custom styling for error support
-                {...register(name)}
-                {...rest}
-            />
-            {error && <label htmlFor={name}>*This field is required</label>}
-        </Fragment>
-    )
-}
-
-function DatePicker() {
-    return (
-        <Fragment>
-            <Input name={multiStepForm.firstName} placeholder="test 1" type='date' />
-        </Fragment>
-    )
-}
-
-function PersonalInfo() {
-    return (
-        <Fragment>
-            <Input name={multiStepForm.lastName} placeholder="test 2" />
-        </Fragment>
-    )
-}
 
 function Summary() {
     return (
@@ -115,62 +78,60 @@ function Summary() {
 
 // Ska jag spara state med useState eller använda useReducer?
 
-function View({id, fields}: {id: number, fields: any[], }) {
+function ViewWrapper({children}: {children: ReactNode}) {
     return (
-        <Fragment>
-            {id}
-            {fields.map((field) =>{
-                return (
-                    <input 
-                        name={field.name}
-                        type={field.type}
-                        required={field.required}
-                        placeholder={field.placeholder}
-                        onChange={(e) => console.log(e.target.value)}
-                    />
-                )
-            })}
-        </Fragment>
-
+        <div style={{
+            display: "flex",
+            flexDirection: "column",
+            width: "20vw",
+        }}>
+            {children}
+        </div>
     )
 }
 
+const InitialFormState: FormState = [
+    {
+        viewId: 0, 
+        title: "Personuppgifter",
+        fields: [
+            {name: multiStepForm.firstName, placeholder:"Förnamn", type: "text", required: true, value: ""},
+            {name: multiStepForm.lastName, placeholder:"Efternamn", type: "text", required: true, value: ""},
+            {name: multiStepForm.email, placeholder:"Email", type: "email", required: true, value: ""},
+        ]
+    },
+    {
+        viewId: 1,
+        title: "Datum",
+        fields: [
+            {name: multiStepForm.lastName, placeholder:"Datum", type: "date", required: true , value:""},
+        ]
+    }
+]
 
-
-
-const INITIAL_STATE: FormState = {
-    formAnswers: []
+const FormReducer = (state: FormState, {viewId, type, value}: 
+    {viewId: number, type: multiStepForm, value: any}
+) => {
+    const newFields = [...state[viewId].fields];
+    const fieldIndex = newFields.findIndex((x) => x.name === type);
+    newFields[fieldIndex].value = value;
+    
+    const newState = [...state];
+    newState[viewId] = { ...state[viewId], fields: newFields };
+    
+    return newState;
 }
 export default function Form() {
-    // used for validation
-    const methods = useForm({
-        mode: 'onTouched', // Validation will trigger on the first blur event. After that, it will trigger on every change event.
-        resolver: zodResolver(formSchema)
-    });
+    const [viewState, dispatch] = useReducer(FormReducer, InitialFormState)
 
-    // const views = [
-    //     {id: 1, view: <DatePicker />},
-    //     {id: 2, view: <PersonalInfo />},
-    // ]
-    const views = [
-        {
-            id: 1, 
-            fields: [
-                {name: multiStepForm.firstName, placeholder:"Förnamn", type: "text", required: true},
-                {name: multiStepForm.lastName, placeholder:"Efternamn", type: "text", required: true},
-                {name: multiStepForm.email, placeholder:"Email", type: "email", required: true},
-            ]
-        },
-        {
-            id: 2, 
-            fields: [
-                {name: multiStepForm.lastName, placeholder:"Datum", type: "date", required: true},
-            ]
-        },
-    ]
-
-    const {currentView, currentStepIdx, nextStep, prevStep, isFirstStep, isLastStep} = 
-        useMultiStepForm(views)
+    const {
+        currentView, 
+        currentStepIdx, 
+        nextStep, 
+        prevStep, 
+        isFirstStep, 
+        isLastStep
+    } = useMultiStepForm(viewState)
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
@@ -178,20 +139,40 @@ export default function Form() {
         nextStep();
     }
 
-    console.log()
-    
+    console.log("currentView from useMultiStepForm", viewState[currentStepIdx])
+    const {viewId, title, fields} = viewState[currentStepIdx]
     return (
-        <FormProvider {...methods}>
+        <Fragment>
             <form onSubmit={handleSubmit}>
-                <div>
-                    <View {...currentView} />
-                </div>
+                <h1>{title}</h1>
+                <ViewWrapper>
+                    {fields.map((field: Field) => <input
+                            key={field.name}
+                            name={field.name}
+                            type={field.type}
+                            required={field.required || false}
+                            placeholder={field.placeholder}
+                            value={field.value} // Not working
+                            onChange={(e) => dispatch({
+                                    viewId: viewId, 
+                                    type: (field.name as multiStepForm), 
+                                    value: e.target.value
+                                })
+                            }
+                        />
+                    )}
+                </ViewWrapper>
                 <button type="button" onClick={prevStep}>prev</button>
                 <button>next</button>
-                {currentStepIdx}
+                <div>
+                    <span>View id: {viewId}</span>
+                    <br/>
+                    <span>Current step index: {currentStepIdx}</span>
+                </div>
+                <pre>{JSON.stringify(viewState, null, 4)}</pre>
             </form>
-            {isLastStep && <Summary/>}
-        </FormProvider>
+            {/* {isLastStep && <Summary/>} */}
+        </Fragment>
     )
 }
 

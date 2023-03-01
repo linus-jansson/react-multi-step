@@ -2,7 +2,7 @@
 
 import { 
     type ReactElement, 
-    useState 
+    useState,
 } from 'react';
 
 export const useMultiStepForm = (steps: any[]) => {
