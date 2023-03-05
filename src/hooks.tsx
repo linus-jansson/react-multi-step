@@ -25,7 +25,7 @@ export const useMultiStepForm = (steps: ReactElement[]) => {
     // const allowNextStep = () => setAllowContinue(true);
 
     /* Clone the current view and pass in the current step index as a prop */
-    steps[currentStepIdx] = cloneElement(steps[currentStepIdx], { id: currentStepIdx });
+    steps[currentStepIdx] = cloneElement(steps[currentStepIdx], { currentView: currentStepIdx });
 
     const currentView  = steps[currentStepIdx]
 

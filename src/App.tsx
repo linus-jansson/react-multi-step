@@ -2,15 +2,6 @@ import { useState, useReducer, FormEvent } from 'react'
 
 import { useMultiStepForm } from './hooks'
 
-// interface IState {
-//     viewIndex: number,
-//     viewAnswers: {
-//         name: string, // Name to identify the input for api
-//         type: string, // type to format the input
-//         value: string // input value
-//     }[] | null
-// }
-
 type IState = {
     [key: string | number]: {
         [key: string]: {
@@ -47,7 +38,7 @@ const enum ACTIONTYPES {
     MARKED_CONFIDENTIAL = "MARKED_CONFIDENTIAL"
 }
 
-function View2({title, id, state, dispatch}: {title: string, id:number, state:any, dispatch: (d:any) => void}) {
+function View2({title, currentView, state, dispatch}: {title: string, currentView:number, state:any, dispatch: (d:any) => void}) {
     const [missingPersNr, setMissingPersNr] = useState(false)
 
     const fieldsStandard = [
@@ -93,7 +84,7 @@ function View2({title, id, state, dispatch}: {title: string, id:number, state:an
             <h1>{title}</h1>
             { fieldsToShow.map((field, idx) => {
                     // Assuming your input field has props `view` and `name`
-                    const value = state[id]?.[field.name]?.value || '';
+                    const value = state[currentView]?.[field.name]?.value || '';
                     return (
                         <div key={idx}>
                             <input 
