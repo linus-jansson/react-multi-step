@@ -1,71 +1,212 @@
-import { InputHTMLAttributes, useEffect } from 'react';
-import { 
-    useForm, 
-    FormProvider as FormValidationProvider, 
-    useFormContext as useFormValidationProvider 
-} from 'react-hook-form';
+import { useState, useReducer, FormEvent } from 'react'
 
-import { useMultiFormContext, MultiFormProvider } from './MultiFormContext';
+import { useMultiStepForm } from './hooks'
 
-interface IInputfield extends InputHTMLAttributes<HTMLInputElement>  {
-    name: string,
-    validationOptions?: any,
-    rest?: InputHTMLAttributes<HTMLInputElement>
-}
+// interface IState {
+//     viewIndex: number,
+//     viewAnswers: {
+//         name: string, // Name to identify the input for api
+//         type: string, // type to format the input
+//         value: string // input value
+//     }[] | null
+// }
 
-function InputField({name, validationOptions, ...rest}: IInputfield){
-    // Inputfield that takes use of useFormContext from react-hook-form, can send validateOptions for validation
-    const { register, formState: { errors } } = useFormValidationProvider();
-    
-    // console.log(validationOptions)
-    // console.log(errors)
-
-    const error = errors?.[name];
-    console.log("Errors", error)
-    return (
-        <>
-            <input 
-                type="text"
-                id={name}
-                style={{border: error ? "2px solid red" : "1px solid black"}}
-                {...register(name)}
-                {...rest}
-            />
-            {error && <label htmlFor={name}>*This field is required</label>}
-        </>
-    )
-}
-
-const CurrentForm = () => {
-    // use FormStateContext
-    // const handler = (e: any) => formContextDispatcher({type: e.target.name, value: e.target.value})
-    const { formState, formDispatch, stepState, stepDispatch } = useMultiFormContext();
-    switch (stepState.step) {
-        case 1:
-            return <InputField name={multiStepForm.firstName} placeholder="Förnamn" handler={(e) => handler(e)} value={formState?.firstName} />;
-        case 2:
-            return <InputField name={multiStepForm.lastName} placeholder="Efternamn" handler={(e) => handler(e)} value={formState?.lastName} />;
-        default:
-            return <></>;
+type IState = {
+    [key: string | number]: {
+        [key: string]: {
+            name: string,
+            type: string,
+            value: string,
+        }
     }
 }
 
-function App() {
-
-    const handler = (e: any) => formDispatch({type: e.target.name, value: e.target.value})
-    // const handler = (e: any) => console.log(e)
-
+function View1() {
     return (
-        <>
-            <InputField name={"firstname"} placeholder="Förnamn" onChange={(e) => handler(e)} value={formState.firstName} />
-            <InputField name={multiStepForm.lastName} placeholder="Efternamn" onChange={(e) => handler(e)} value={formState?.lastName} />
-            {/*  */}
-            <button onClick={() => stepDispatch(stepAction.DecStep)}>Prev</button>
-            <button onClick={() => stepDispatch(stepAction.IncStep)}>Next</button>
-            <p>Current step: {stepState.step}</p>
-            <pre>{JSON.stringify(formState, null, 2)}</pre>
-        </>
-    );
+        <div>
+            <h1>View 1</h1>
+            <input type="date" name="" id="" required={false} />
+        </div>
+    )
 }
 
-export default () => <MultiFormProvider><App/></MultiFormProvider>
+const enum ACTIONTYPES {
+    PERS_NR = "PERS_NR", 
+    PHONE_NUMBER = "PHONE_NUMBER", 
+    EMAIL = "EMAIL", 
+    MISSING_PERS_NR = "MISSING_PERS_NR", 
+    FIRST_NAME = "FIRST_NAME", 
+    FIRST_NAME_SECOND = "FIRST_NAME_SECOND", 
+    LAST_NAME = "LAST_NAME", 
+    ADRESS = "ADRESS", 
+    POSTALCODE = "POSTALCODE", 
+    CITY = "CITY", 
+    COUNTRY = "COUNTRY", 
+    NATIONALITY = "NATIONALITY", 
+    DATE_OF_BIRTH = "DATE_OF_BIRTH", 
+    MARKED_CONFIDENTIAL = "MARKED_CONFIDENTIAL"
+}
+
+function View2({title, id, state, dispatch}: {title: string, id:number, state:any, dispatch: (d:any) => void}) {
+    const [missingPersNr, setMissingPersNr] = useState(false)
+
+    const fieldsStandard = [
+        {type: "text", placeholder: 'socialSecurityNumber', name:"persNr", action: ACTIONTYPES.PERS_NR},
+        {type: "text", placeholder: 'telephoneNumber', name:"telephone", action: ACTIONTYPES.PHONE_NUMBER},
+        {type: "text", placeholder: 'email', name:"email", action: ACTIONTYPES.EMAIL},
+    ]
+    
+    const fieldsAdditional = [
+        {type: "text", placeholder: "firstName", name:"firstName", action: ACTIONTYPES.FIRST_NAME},
+        {type: "text", placeholder: "firstNameSecond", name:"firstnamesecond", action: ACTIONTYPES.FIRST_NAME_SECOND},
+        {type: "text", placeholder: "lastName", name:"lastname", action: ACTIONTYPES.LAST_NAME},
+        {type: "text", placeholder: "adress", name:"adress", action: ACTIONTYPES.ADRESS},
+        {type: "text", placeholder: "postalCode", name:"postalCode", action: ACTIONTYPES.POSTALCODE},
+        {type: "text", placeholder: "town", name:"city", action: ACTIONTYPES.CITY},
+        {type: "text", placeholder: "country", name:"country", action: ACTIONTYPES.COUNTRY},
+        {type: "text", placeholder: "nationality", name:"nationality", action: ACTIONTYPES.NATIONALITY},
+        {type: "date", placeholder: "dateOfBirth", name:"dateOfBirth", action: ACTIONTYPES.DATE_OF_BIRTH},
+        {type: "checkbox", placeholder: 'markedConfidential', name:"markedConfidential", action: ACTIONTYPES.MARKED_CONFIDENTIAL},
+    ]
+
+    const HandleChange = (event) => {
+        const target = event.target;
+        const value = target.type === 'checkbox' ? target.checked : target.value;
+        const name = target.name;
+
+        dispatch({name: name, value: value, type: target.type, view:id})
+    }
+
+
+    const HandleMissingNr = (event: InputEvent<HTMLInputElement>) => {
+        setMissingPersNr(event.target.checked)
+        // dispatch({type: ACTIONTYPES.MISSING_PERS_NR, value: e.target.checked})
+    }
+
+    const fieldsToShow = !missingPersNr ? fieldsStandard :  fieldsAdditional
+
+    return (
+        <div>
+            
+            <label htmlFor="missingPnrCheckbox">Saknar personnummer</label>
+            <input type='checkbox' name="missingPnrCheckbox" onChange={HandleMissingNr} />
+            <h1>{title}</h1>
+            { fieldsToShow.map((field, idx) => {
+                    // Assuming your input field has props `view` and `name`
+                    const value = state[id]?.[field.name]?.value || '';
+                    return (
+                        <div key={idx}>
+                            <input 
+                                type={field.type}
+                                placeholder={field.placeholder}
+                                name={field.name}
+                                value={value}
+                                onChange={HandleChange}
+                                />
+                        </div>
+                    )
+                })
+            }
+        </div>
+    )
+}
+function View3() {
+    return (
+        <div>
+            <h1>View 3</h1>
+        </div>
+    )
+}
+
+
+
+// const InitialState: IState[] | [] = [
+//     {
+//         viewIndex: 1,
+//         viewAnswers: []
+//     },
+
+// ]
+
+type FormAction = 
+{
+    view: number,
+    name: string,
+    value: string,
+    type: string
+}
+const FormReducer = (state: IState[], action: FormAction) =>  {
+    const { view, name, value, type } = action;
+    if (!view) {
+        // handle case where view is undefined
+        console.log("view is undefined");
+        return state;
+      }
+    
+      // check if the view already exists in the state
+      if (!state[view]) {
+        // if it doesn't exist, create a new object for the view
+        state[view] = {};
+      }
+    
+      // check if the input already exists in the view
+      if (!state[view][name]) {
+        // if it doesn't exist, create a new object for the input
+        state[view][name] = { value, type, name };
+      }
+    
+      // update the value of the input
+      state[view][name].value = value;
+    
+      return { ...state };
+};
+/*
+    const state = [
+        {
+            viewIndex: 1,
+            viewAnswers: [
+                { name: 'persNr', type: 'text', value: '1234567890'}
+            ]
+
+        },
+        {
+            viewIndex: 2,
+            viewAnswers: [
+                { name: 'dateBooked', type: 'date', value: '2021-01-01' },  
+                { name: 'dateOfTravel', type: 'date', value: '2021-01-01', },
+                { name: 'email', type: 'email', value: 'a@gmail.com',}
+            },
+        }
+    ]
+*/
+
+const InitialState = {
+}
+
+
+
+function App() {
+    const [formState, formDispatch] = useReducer(FormReducer, InitialState)
+    const multiStep = useMultiStepForm([
+            <View1 title="Datum bokning" state={formState} dispatch={formDispatch} />,
+            <View2 title="Personuppgifter Person 1" state={formState} dispatch={formDispatch}  />,
+            <View2 title="Personuppgifter Person 2" state={formState} dispatch={formDispatch}  />,
+            <View3 />
+        ]) 
+
+    const HandleSubmit = (event: FormEvent) => {
+        event.preventDefault();
+
+        multiStep.nextStep();
+    }
+
+    return (
+        <form onSubmit={HandleSubmit}>
+            {multiStep.currentView}
+            <button type='button' onClick={multiStep.prevStep} >prev</button>
+            <button disabled={multiStep.allowContinue}>next</button>
+        </form>
+    )
+}
+
+export default App
